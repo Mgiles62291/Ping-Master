@@ -31,32 +31,34 @@ jobs:
       - name: Ensure icons exist (generate if missing)
         shell: pwsh
         run: |
-          python - << 'PY'
-          import os
-          from PIL import Image
+          $script = @'
+import os
+from PIL import Image
 
-          os.makedirs("icons", exist_ok=True)
+os.makedirs("icons", exist_ok=True)
 
-          def make_icon(rgb, path):
-              img = Image.new("RGBA", (64, 64), (0, 0, 0, 0))
-              cx, cy, r = 32, 32, 28
-              for y in range(64):
-                  for x in range(64):
-                      dx, dy = x - cx, y - cy
-                      if dx*dx + dy*dy <= r*r:
-                          img.putpixel((x, y), (*rgb, 255))
-              img.save(path, format="ICO", sizes=[(16,16), (32,32), (48,48), (64,64)])
+def make_icon(rgb, path):
+    img = Image.new("RGBA", (64, 64), (0, 0, 0, 0))
+    cx, cy, r = 32, 32, 28
+    for y in range(64):
+        for x in range(64):
+            dx, dy = x - cx, y - cy
+            if dx*dx + dy*dy <= r*r:
+                img.putpixel((x, y), (*rgb, 255))
+    img.save(path, format="ICO", sizes=[(16,16), (32,32), (48,48), (64,64)])
 
-          green = os.path.join("icons", "green.ico")
-          red = os.path.join("icons", "red.ico")
+green = os.path.join("icons", "green.ico")
+red = os.path.join("icons", "red.ico")
 
-          if not os.path.exists(green):
-              make_icon((0, 180, 0), green)
-          if not os.path.exists(red):
-              make_icon((200, 0, 0), red)
+if not os.path.exists(green):
+    make_icon((0, 180, 0), green)
+if not os.path.exists(red):
+    make_icon((200, 0, 0), red)
 
-          print("Icons ready:", os.listdir("icons"))
-          PY
+print("Icons ready:", os.listdir("icons"))
+'@
+          Set-Content -Path "gen_icons.py" -Value $script -Encoding UTF8
+          python gen_icons.py
 
       - name: Build EXE (PyInstaller)
         shell: pwsh
