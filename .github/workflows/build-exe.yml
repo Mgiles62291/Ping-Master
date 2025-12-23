@@ -2,51 +2,67 @@ name: Build Windows ZIP
 
 on:
   release:
-    types: [created]
+    types: [published]   # runs when you publish a release (more reliable than 'created')
+  workflow_dispatch: {}  # allows manual runs from Actions tab
+
+permissions:
+  contents: write        # required to upload assets to Releases
 
 jobs:
   build:
     runs-on: windows-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
+      - name: Setup Python
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
       - name: Install dependencies
+        shell: pwsh
         run: |
           python -m pip install --upgrade pip
-          pip install pyinstaller pystray pillow
+          pip install pyinstaller pystray pillow pywin32
 
-      - name: Build EXE
+      - name: Build EXE (PyInstaller)
+        shell: pwsh
         run: |
-          pyinstaller --onefile --noconsole `
+          python -m PyInstaller --onefile --noconsole --name PingMonitor `
             --add-data "config.example.json;." `
             --add-data "icons;icons" `
+            --collect-submodules pystray `
             monitor.py
 
       - name: Prepare release folder
+        shell: pwsh
         run: |
-          mkdir release
-          move dist\monitor.exe release\PingMonitor.exe
-          copy config.example.json release\
-          xcopy icons release\icons /E /I
+          New-Item -ItemType Directory -Force release | Out-Null
+          Move-Item "dist\PingMonitor.exe" "release\PingMonitor.exe"
+          Copy-Item "config.example.json" "release\config.example.json"
+          New-Item -ItemType Directory -Force "release\icons" | Out-Null
+          Copy-Item "icons\*" "release\icons" -Recurse -Force
 
       - name: Create README.txt
+        shell: pwsh
         run: |
-          echo Ping Monitor Tray App > release\README.txt
-          echo. >> release\README.txt
-          echo 1. Edit config.example.json >> release\README.txt
-          echo 2. Rename to config.json >> release\README.txt
-          echo 3. Run PingMonitor.exe >> release\README.txt
+          @"
+Ping Monitor Tray App
+
+1) Edit config.example.json
+2) Rename it to config.json (must be next to PingMonitor.exe)
+3) Run PingMonitor.exe
+"@ | Set-Content -Encoding UTF8 release\README.txt
 
       - name: Zip release
+        shell: pwsh
         run: |
-          powershell Compress-Archive -Path release\* -DestinationPath PingMonitor.zip
+          if (Test-Path PingMonitor.zip) { Remove-Item PingMonitor.zip -Force }
+          Compress-Archive -Path release\* -DestinationPath PingMonitor.zip
 
-      - name: Upload ZIP
+      - name: Upload ZIP to Release
         uses: softprops/action-gh-release@v2
         with:
           files: PingMonitor.zip
