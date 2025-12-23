@@ -34,14 +34,18 @@ jobs:
           python -m PyInstaller --onefile --noconsole --name PingMonitor `
             --add-data "config.example.json;." `
             --collect-submodules pystray `
+            --hidden-import tkinter `
+            --hidden-import tkinter.ttk `
+            --hidden-import tkinter.filedialog `
+            --hidden-import tkinter.messagebox `
             monitor.py
 
       - name: Prepare release folder
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force release | Out-Null
-          Move-Item "dist\\PingMonitor.exe" "release\\PingMonitor.exe"
-          Copy-Item "config.example.json" "release\\config.example.json"
+          Move-Item "dist\PingMonitor.exe" "release\PingMonitor.exe"
+          Copy-Item "config.example.json" "release\config.example.json"
 
       - name: Create README.txt
         shell: pwsh
@@ -53,15 +57,25 @@ jobs:
             "2) Rename it to config.json (must be next to PingMonitor.exe)",
             "3) Run PingMonitor.exe"
           ) -join "`r`n"
-          $text | Set-Content -Encoding UTF8 "release\\README.txt"
+          $text | Set-Content -Encoding UTF8 "release\README.txt"
 
       - name: Zip release
         shell: pwsh
         run: |
           if (Test-Path "PingMonitor.zip") { Remove-Item "PingMonitor.zip" -Force }
-          Compress-Archive -Path "release\\*" -DestinationPath "PingMonitor.zip"
+          Compress-Archive -Path "release\*" -DestinationPath "PingMonitor.zip"
 
-      - name: Upload ZIP to Release
+      # If this run was triggered manually (workflow_dispatch), upload as a workflow artifact.
+      - name: Upload ZIP as workflow artifact (manual runs)
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v4
+        with:
+          name: PingMonitor
+          path: PingMonitor.zip
+
+      # If this run was triggered by publishing a Release tag, attach ZIP to that Release.
+      - name: Upload ZIP to GitHub Release (release runs)
+        if: github.event_name == 'release'
         uses: softprops/action-gh-release@v2
         with:
           files: PingMonitor.zip
