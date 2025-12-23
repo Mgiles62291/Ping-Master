@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+
+# secrets
+config.json
+.env/
+
+# build artifacts
+build/
+dist/
+*.spec
+
+# OS files
+.DS_Store
+Thumbs.db

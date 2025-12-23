@@ -1,0 +1,13 @@
+{
+  "check_interval": 30,
+  "email": {
+    "from": "you@example.com",
+    "to": "alerts@example.com",
+    "smtp_server": "smtp.gmail.com",
+    "smtp_port": 587,
+    "password": "APP_PASSWORD"
+  },
+  "devices": {
+    "Example Device": "8.8.8.8"
+  }
+}
