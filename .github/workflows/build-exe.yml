@@ -2,11 +2,12 @@ name: Build Windows ZIP
 
 on:
   release:
-    types: [published]   # runs when you publish a release (more reliable than 'created')
-  workflow_dispatch: {}  # allows manual runs from Actions tab
+    types:
+      - published
+  workflow_dispatch:
 
 permissions:
-  contents: write        # required to upload assets to Releases
+  contents: write
 
 jobs:
   build:
@@ -19,7 +20,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: "3.11"
 
       - name: Install dependencies
         shell: pwsh
@@ -48,19 +49,20 @@ jobs:
       - name: Create README.txt
         shell: pwsh
         run: |
-          @"
-Ping Monitor Tray App
-
-1) Edit config.example.json
-2) Rename it to config.json (must be next to PingMonitor.exe)
-3) Run PingMonitor.exe
-"@ | Set-Content -Encoding UTF8 release\README.txt
+          $text = @(
+            "Ping Monitor Tray App",
+            "",
+            "1) Edit config.example.json",
+            "2) Rename it to config.json (must be next to PingMonitor.exe)",
+            "3) Run PingMonitor.exe"
+          ) -join "`r`n"
+          $text | Set-Content -Encoding UTF8 "release\README.txt"
 
       - name: Zip release
         shell: pwsh
         run: |
-          if (Test-Path PingMonitor.zip) { Remove-Item PingMonitor.zip -Force }
-          Compress-Archive -Path release\* -DestinationPath PingMonitor.zip
+          if (Test-Path "PingMonitor.zip") { Remove-Item "PingMonitor.zip" -Force }
+          Compress-Archive -Path "release\*" -DestinationPath "PingMonitor.zip"
 
       - name: Upload ZIP to Release
         uses: softprops/action-gh-release@v2
